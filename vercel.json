@@ -1,10 +1,12 @@
 {
+  "buildCommand": "cd frontend && npm install && npm run build && cd ../server && npm install",
+  "outputDirectory": "frontend/dist",
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" }
   ],
   "functions": {
-    "api/index.js": {
-      "runtime": "nodejs16.x"
+    "server/index.ts": {
+      "runtime": "nodejs18.x"
     }
   }
 }
