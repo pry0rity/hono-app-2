@@ -11,11 +11,8 @@ app.use('*', async (c, next) => {
   await next()
 })
 
-// Test route to verify the handler is working
-app.get('/', (c) => c.json({ message: 'Expenses API is running' }))
-
-// Main expenses routes
-app.route('/', expensesRoute)
+// Mount the expenses routes
+app.route('', expensesRoute)
 
 export const config = {
   runtime: 'edge'
