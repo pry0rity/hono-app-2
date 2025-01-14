@@ -3,6 +3,7 @@
   "module": "server/index.ts",
   "type": "module",
   "devDependencies": {
+    "@flydotio/dockerfile": "^0.7.0",
     "@types/bun": "latest"
   },
   "peerDependencies": {
@@ -10,8 +11,7 @@
   },
   "scripts": {
     "start": "bun server/index.ts",
-    "dev": "bun --watch server/index.ts",
-    "vercel-build": "bun build && npm run build"
+    "dev": "bun --watch server/index.ts"
   },
   "dependencies": {
     "@hono/zod-validator": "^0.4.2",
