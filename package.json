@@ -9,8 +9,9 @@
     "typescript": "^5.0.0"
   },
   "scripts": {
-    "start": "bun  server/index.ts",
-    "dev": "bun --watch server/index.ts" 
+    "start": "bun server/index.ts",
+    "dev": "bun --watch server/index.ts",
+    "vercel-build": "bun build && npm run build"
   },
   "dependencies": {
     "@hono/zod-validator": "^0.4.2",

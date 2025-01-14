@@ -1,12 +1,10 @@
 {
-  "buildCommand": "cd frontend && bun install && bun run build && cd .. && bun install",
-  "outputDirectory": "frontend/dist",
-  "devCommand": "bun run dev",
-  "framework": null,
   "rewrites": [
-    {
-      "source": "/((?!api/.*).*)",
-      "destination": "/index.html"
+    { "source": "/api/(.*)", "destination": "/api/$1" }
+  ],
+  "functions": {
+    "api/index.js": {
+      "runtime": "nodejs16.x"
     }
-  ]
-} 
+  }
+}
