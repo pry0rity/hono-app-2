@@ -1,0 +1,20 @@
+{
+  "name": "hono-app-2",
+  "module": "server/index.ts",
+  "type": "module",
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "scripts": {
+    "start": "bun  server/index.ts",
+    "dev": "bun --watch server/index.ts" 
+  },
+  "dependencies": {
+    "@hono/zod-validator": "^0.4.2",
+    "hono": "^4.6.16",
+    "zod": "^3.24.1"
+  }
+}
