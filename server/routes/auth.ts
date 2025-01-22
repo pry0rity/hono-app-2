@@ -4,7 +4,7 @@ import { kindeClient, sessionManager } from '../kinde'
 const app = new Hono()
 
 export const authRoute = new Hono()
-  .get("/login", async (c) => {
+  .get("/login", async (c) => {    
     const loginUrl = await kindeClient.login(sessionManager(c));
     console.log(loginUrl.toString());
     return c.redirect(loginUrl.toString());
@@ -28,10 +28,17 @@ export const authRoute = new Hono()
 
   .get("/logout", async (c) => {
     await kindeClient.logout(sessionManager(c));
-    return c.redirect("/login");
+    return c.redirect("/");
   })
 
   .get("/me", async (c) => {
-    const isAuthenticated = await kindeClient.isAuthenticated(sessionManager(c));
-    return c.json({ isAuthenticated });
+    const manager = sessionManager(c);
+    const isAuthenticated = await kindeClient.isAuthenticated(manager);
+
+    if(!isAuthenticated) {
+      return c.json({ error: "You are not authenticated" }, 401);
+    }
+
+    const user = await kindeClient.getUserProfile(manager);
+    return c.json({ user });
   })
