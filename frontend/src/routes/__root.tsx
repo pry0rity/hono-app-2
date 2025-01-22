@@ -17,6 +17,9 @@ function NavBar() {
       <Link to="/create-expense" className="[&.active]:font-bold">
         Create Expense
       </Link>
+      <Link to="/profile" className="[&.active]:font-bold">
+        Profile
+      </Link>
     </div>
   );
 }
