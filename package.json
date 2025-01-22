@@ -14,7 +14,9 @@
     "dev": "bun --watch server/index.ts"
   },
   "dependencies": {
+    "@hono/sentry": "^1.2.0",
     "@hono/zod-validator": "^0.4.2",
+    "@kinde-oss/kinde-typescript-sdk": "^2.9.1",
     "hono": "^4.6.16",
     "zod": "^3.24.1"
   }
