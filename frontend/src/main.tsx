@@ -1,3 +1,4 @@
+// import { Monitoring } from "react-scan/monitoring";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
@@ -24,6 +25,12 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />
+      {/* <Monitoring
+        apiKey="4RD5tKji3UZNfvfinKV5uo-obdl7aUms" // Safe to expose publically
+        url="https://monitoring.react-scan.com/api/v1/ingest"
+        commit={process.env.GIT_COMMIT_HASH} // optional but recommended
+        branch={process.env.GIT_BRANCH} // optional but recommended
+      /> */}
     </QueryClientProvider>
   </StrictMode>
 );

@@ -1,5 +1,6 @@
 import path from "path"
 import react from "@vitejs/plugin-react"
+import ReactComponentName from "react-scan/react-component-name/vite"
 import { defineConfig } from "vite"
 import { TanStackRouterVite } from "@tanstack/router-plugin/vite"
 
@@ -8,6 +9,7 @@ export default defineConfig({
   plugins: [
     TanStackRouterVite(),
     react(),
+    ReactComponentName({}),
   ],
   resolve: {
     alias: {
