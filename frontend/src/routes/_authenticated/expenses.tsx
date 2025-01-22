@@ -1,7 +1,7 @@
-import { api } from "@/lib/api";
-import { useQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
-import { Skeleton } from "@/components/ui/skeleton";
+import { api } from '@/lib/api'
+import { useQuery } from '@tanstack/react-query'
+import { createFileRoute } from '@tanstack/react-router'
+import { Skeleton } from '@/components/ui/skeleton'
 
 import {
   Table,
@@ -12,42 +12,42 @@ import {
   TableHeader,
   TableFooter,
   TableRow,
-} from "@/components/ui/table";
+} from '@/components/ui/table'
 
-export const Route = createFileRoute("/expenses")({
+export const Route = createFileRoute('/_authenticated/expenses')({
   component: GetAllExpenses,
-});
+})
 
 async function fetchExpenses() {
-  const res = await api.v1.expenses.$get();
+  const res = await api.v1.expenses.$get()
   if (res.ok) {
-    const data = await res.json();
-    return data;
+    const data = await res.json()
+    return data
   }
-  throw new Error("Failed to fetch expenses");
+  throw new Error('Failed to fetch expenses')
 }
 
 async function fetchTotalSpent() {
-  const res = await api.v1.expenses["total-spent"].$get();
+  const res = await api.v1.expenses['total-spent'].$get()
   if (res.ok) {
-    const data = await res.json();
-    return data;
+    const data = await res.json()
+    return data
   }
-  throw new Error("Failed to fetch total spent");
+  throw new Error('Failed to fetch total spent')
 }
 
 function GetAllExpenses() {
   const { isPending, error, data } = useQuery({
-    queryKey: ["get-all-expenses"],
+    queryKey: ['get-all-expenses'],
     queryFn: () => fetchExpenses(),
-  });
+  })
 
   const { data: totalData } = useQuery({
-    queryKey: ["get-total-spent"],
+    queryKey: ['get-total-spent'],
     queryFn: () => fetchTotalSpent(),
-  });
+  })
 
-  if (error) return `Error: ${error.message}`;
+  if (error) return `Error: ${error.message}`
   return (
     <div>
       <Table>
@@ -96,5 +96,5 @@ function GetAllExpenses() {
         </TableFooter>
       </Table>
     </div>
-  );
+  )
 }

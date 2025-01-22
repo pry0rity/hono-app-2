@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/_authenticated/")({
   component: Index,
 });
 
@@ -34,7 +34,7 @@ function Index() {
   if (error) return `Error: ${error.message}`;
 
   return (
-    <Card className="max-w-md mx-auto gap-y-5">
+    <Card className="mx-auto gap-y-5">
       <CardHeader>
         <CardTitle>Total Spent</CardTitle>
         <CardDescription>The total amount of money spent</CardDescription>
