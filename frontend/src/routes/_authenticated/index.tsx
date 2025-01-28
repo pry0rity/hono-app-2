@@ -40,7 +40,7 @@ function Index() {
         <CardDescription>The total amount of money spent</CardDescription>
       </CardHeader>
       <CardContent>
-        <p>{isPending ? "Loading..." : data?.total}</p>
+        <p>{isPending ? "Loading..." : "$" + data?.total}</p>
       </CardContent>
     </Card>
   );

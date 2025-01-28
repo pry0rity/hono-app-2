@@ -12,13 +12,12 @@ WORKDIR /app
 # Set production environment
 ENV NODE_ENV="production"
 
-
 # Throw-away build stage to reduce size of final image
 FROM base AS build
 
 # Install packages needed to build node modules
 RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y build-essential pkg-config python-is-python3
+    apt-get install --no-install-recommends -y build-essential pkg-config python-is-python3 curl ca-certificates
 
 # Install node modules
 COPY bun.lockb package.json ./
@@ -34,6 +33,17 @@ COPY --link . .
 # Change to frontend directory and build frontend app 
 WORKDIR /app/frontend
 RUN bun run build
+
+# Install Sentry CLI and create release during build
+ARG SENTRY_AUTH_TOKEN
+ARG SENTRY_ORG
+ARG SENTRY_PROJECT
+
+RUN curl -sL https://sentry.io/get-cli/ | bash && \
+    export VERSION=$(sentry-cli releases propose-version) && \
+    sentry-cli releases new "$VERSION" && \
+    sentry-cli releases set-commits "$VERSION" --auto && \
+    sentry-cli releases finalize "$VERSION"
 
 # remove all files from frontend except dist
 RUN find . -mindepth 1 ! -regex '^./dist\(/.*\)?' -delete

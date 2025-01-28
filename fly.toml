@@ -1,12 +1,20 @@
 # fly.toml app configuration file generated for hono-app-2-wandering-waterfall-2608 on 2025-01-13T20:40:58-08:00
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
-#
 
 app = 'hono-app-2-wandering-waterfall-2608'
 primary_region = 'lax'
 
 [build]
+  [build.args]
+    SENTRY_AUTH_TOKEN = "151c44330e7cfa4d0ac934573f723bd776799827be7665e25460859c1a3590a7"
+    SENTRY_ORG = "pry0rity"
+    SENTRY_PROJECT = "javascript-react"
+
+[env]
+  SENTRY_AUTH_TOKEN = "151c44330e7cfa4d0ac934573f723bd776799827be7665e25460859c1a3590a7"
+  SENTRY_ORG = "pry0rity"
+  SENTRY_PROJECT = "javascript-react"
 
 [http_service]
   internal_port = 3000

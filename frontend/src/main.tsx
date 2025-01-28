@@ -16,8 +16,9 @@ Sentry.init({
   ],
   tracesSampleRate: 1.0,
   tracePropagationTargets: ["localhost", /^https:\/\/yourserver\.io\/api/],
-  replaysSessionSampleRate: 0.1,
+  replaysSessionSampleRate: 1.0,
   replaysOnErrorSampleRate: 1.0,
+  profilesSampleRate: 1.0,
 });
 
 // create a query client
