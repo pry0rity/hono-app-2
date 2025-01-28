@@ -30,6 +30,7 @@ type Expense = z.infer<typeof expenseSchema>
 
 // Create new Hono router instance for expenses routes
 export const expensesRoute = new Hono()
+  // GET /expenses - Returns paginated list of expenses for authenticated user
   .get('/', getUser, zValidator('query', paginationSchema), async (c) => {
     const user = c.var.user
     const { page, limit } = c.req.valid('query')
@@ -62,6 +63,7 @@ export const expensesRoute = new Hono()
       }
     })
   })
+  // GET /expenses/total-spent - Returns total sum of all expenses for authenticated user
   .get('/total-spent', getUser, async (c) => {
     const user = c.var.user
     const [result] = await db
@@ -73,6 +75,7 @@ export const expensesRoute = new Hono()
 
     return c.json({ total: result.total || '0' })
   })
+  // GET /expenses/:id - Returns single expense by ID if it belongs to authenticated user
   .get('/:id{[0-9]+}', getUser, async (c) => {
     const id = c.req.param('id')
     const user = c.var.user
@@ -92,6 +95,7 @@ export const expensesRoute = new Hono()
     }
     return c.json({ expense: expense[0] })
   })
+  // POST /expenses - Creates new expense for authenticated user
   .post('/', zValidator('json', createExpenseSchema), getUser, async (c) => {
     const expense = c.req.valid('json')
     const user = c.var.user
@@ -105,6 +109,7 @@ export const expensesRoute = new Hono()
     c.status(201)
     return c.json({ result }) 
   })  
+  // DELETE /expenses/:id - Deletes expense by ID if it belongs to authenticated user
   .delete('/:id{[0-9]+}', getUser, async (c) => {
     const id = c.req.param('id')
     const user = c.var.user
