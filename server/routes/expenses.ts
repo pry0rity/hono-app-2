@@ -6,6 +6,7 @@ import { getUser } from '../kinde'
 
 import db from '../db'
 import { expenses as expensesTable } from '../db/schema/expenses'
+import { categories as categoriesTable } from '../db/schema/categories'
 import { and, eq, desc, count, sum, sql, between, like, or, SQL, asc } from 'drizzle-orm'
 
 // Define schema for expense validation
@@ -16,7 +17,7 @@ const expenseSchema = z.object({
   amount: z.string(),
   type: z.enum(['expense', 'income']).default('expense'),
   date: z.date().default(() => new Date()),
-  category: z.string(),
+  categoryId: z.number().int().positive(),
   notes: z.string().optional(),
   status: z.enum(['cleared', 'pending', 'reconciled']).default('cleared'),
   createdAt: z.date().optional(),
@@ -61,17 +62,37 @@ export const expensesRoute = new Hono()
     }
 
     if (category) {
-      conditions.push(eq(expensesTable.category, category))
+      conditions.push(eq(categoriesTable.name, category))
     }
 
     if (status) {
       conditions.push(eq(expensesTable.status, status))
     }
 
-    // Get filtered expenses
+    // Get filtered expenses with category information
     const expenses = await db
-      .select()
+      .select({
+        id: expensesTable.id,
+        userId: expensesTable.userId,
+        title: expensesTable.title,
+        description: expensesTable.description,
+        amount: expensesTable.amount,
+        type: expensesTable.type,
+        date: expensesTable.date,
+        categoryId: expensesTable.categoryId,
+        category: {
+          id: categoriesTable.id,
+          name: categoriesTable.name,
+          color: categoriesTable.color,
+          icon: categoriesTable.icon,
+        },
+        notes: expensesTable.notes,
+        status: expensesTable.status,
+        createdAt: expensesTable.createdAt,
+        updatedAt: expensesTable.updatedAt,
+      })
       .from(expensesTable)
+      .leftJoin(categoriesTable, eq(expensesTable.categoryId, categoriesTable.id))
       .where(and(...conditions))
       .orderBy(desc(expensesTable.date))
       .limit(limit)
@@ -119,18 +140,24 @@ export const expensesRoute = new Hono()
     // Get spending by category
     const categoryTotals = await db
       .select({
-        category: expensesTable.category,
+        category: {
+          id: categoriesTable.id,
+          name: categoriesTable.name,
+          color: categoriesTable.color,
+          icon: categoriesTable.icon,
+        },
         total: sql<string>`CAST(SUM(CAST(amount AS DECIMAL)) AS TEXT)`,
         count: count(),
       })
       .from(expensesTable)
+      .leftJoin(categoriesTable, eq(expensesTable.categoryId, categoriesTable.id))
       .where(
         and(
           eq(expensesTable.userId, user.id),
           eq(expensesTable.type, 'expense')
         )
       )
-      .groupBy(expensesTable.category)
+      .groupBy(categoriesTable.id, categoriesTable.name, categoriesTable.color, categoriesTable.icon)
       .orderBy(desc(sql`SUM(CAST(amount AS DECIMAL))`))
 
     return c.json({
@@ -142,19 +169,12 @@ export const expensesRoute = new Hono()
       categoryBreakdown: categoryTotals
     })
   })
-  // GET /expenses/categories - Returns list of used categories with counts
+  // GET /expenses/categories - Returns list of all categories
   .get('/categories', getUser, async (c) => {
-    const user = c.var.user
-
     const categories = await db
-      .select({
-        category: expensesTable.category,
-        count: count(),
-      })
-      .from(expensesTable)
-      .where(eq(expensesTable.userId, user.id))
-      .groupBy(expensesTable.category)
-      .orderBy(desc(sql`count(*)`))
+      .select()
+      .from(categoriesTable)
+      .orderBy(asc(categoriesTable.name))
 
     return c.json({ categories })
   })
@@ -185,9 +205,15 @@ export const expensesRoute = new Hono()
     const now = new Date()
 
     const result = await db.insert(expensesTable).values({
-      ...expense,
       userId: user.id,
+      title: expense.title,
+      description: expense.description,
+      amount: expense.amount,
+      type: expense.type,
       date: expense.date || now,
+      categoryId: expense.categoryId,
+      notes: expense.notes,
+      status: expense.status,
       createdAt: now,
       updatedAt: now,
     })

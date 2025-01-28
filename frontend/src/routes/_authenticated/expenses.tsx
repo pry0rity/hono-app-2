@@ -10,7 +10,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useState } from "react";
-
 import {
   Table,
   TableBody,
@@ -21,6 +20,8 @@ import {
   TableFooter,
   TableRow,
 } from "@/components/ui/table";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 
 const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
   "Food & Dining": { bg: "bg-orange-100", text: "text-orange-800" },
@@ -44,6 +45,37 @@ const formatAmount = (amount: number) =>
 export const Route = createFileRoute("/_authenticated/expenses")({
   component: GetAllExpenses,
 });
+
+interface Category {
+  id: number;
+  name: string;
+  color: string | null;
+  icon: string | null;
+}
+
+interface Expense {
+  id: number;
+  type: 'expense' | 'income';
+  categoryId: number;
+  category: Category;
+  status: string;
+  date: string;
+  userId: string;
+  title: string;
+  description: string | null;
+  amount: string;
+  notes: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+interface DashboardData {
+  expenses: Expense[];
+  pagination: {
+    total: number;
+    pages: number;
+  };
+}
 
 async function fetchExpenses(
   page: number,
@@ -100,6 +132,51 @@ function GetAllExpenses() {
   });
 
   if (error) return `Error: ${error.message}`;
+  if (!data?.expenses) return null;
+
+  // Process data for charts
+  const expensesByDay = new Map<string, { expenses: number; income: number }>();
+  const categoryTotals = new Map<string, number>();
+  let totalExpenses = 0;
+  let totalIncome = 0;
+  let biggestExpense = { amount: 0, title: "", category: { name: "", color: "", icon: "" } };
+
+  data.expenses.forEach((expense) => {
+    const date = expense.date.split("T")[0];
+    const amount = Number(expense.amount);
+
+    // Daily totals
+    if (!expensesByDay.has(date)) {
+      expensesByDay.set(date, { expenses: 0, income: 0 });
+    }
+    const daily = expensesByDay.get(date)!;
+    if (expense.type === "expense") {
+      daily.expenses += amount;
+      totalExpenses += amount;
+
+      // Track biggest expense
+      if (amount > biggestExpense.amount) {
+        biggestExpense = {
+          amount,
+          title: expense.title,
+          category: {
+            name: expense.category?.name || 'Uncategorized',
+            color: expense.category?.color || '#71717A',
+            icon: expense.category?.icon || '📝',
+          },
+        };
+      }
+
+      // Category totals
+      if (expense.category) {
+        const currentTotal = categoryTotals.get(expense.category.name) || 0;
+        categoryTotals.set(expense.category.name, currentTotal + amount);
+      }
+    } else {
+      daily.income += amount;
+      totalIncome += amount;
+    }
+  });
 
   return (
     <div className="space-y-4">
@@ -161,8 +238,11 @@ function GetAllExpenses() {
             <SelectContent>
               <SelectItem value="all">All Categories</SelectItem>
               {categories?.map((cat) => (
-                <SelectItem key={cat.category} value={cat.category}>
-                  {cat.category}
+                <SelectItem key={cat.id} value={cat.name}>
+                  <span className="flex items-center gap-1">
+                    <span>{cat.icon}</span>
+                    <span>{cat.name}</span>
+                  </span>
                 </SelectItem>
               ))}
             </SelectContent>
@@ -259,16 +339,24 @@ function GetAllExpenses() {
                   <TableCell>{expense.title}</TableCell>
                   <TableCell>
                     <span
-                      className={`px-2 py-1 rounded-full text-sm ${
-                        CATEGORY_COLORS[expense.category]?.bg || "bg-gray-100"
-                      } ${
-                        expense.type === "income"
-                          ? "text-green-800 bg-green-100"
-                          : CATEGORY_COLORS[expense.category]?.text ||
-                            "text-gray-800"
+                      className={`inline-flex items-center rounded-full px-2 py-1 text-sm ${
+                        expense.type === 'income' ? "bg-green-100 text-green-800" : ""
                       }`}
+                      style={
+                        expense.type !== 'income' && expense.category?.color
+                          ? {
+                              backgroundColor: `${expense.category.color}15`,
+                              color: expense.category.color || '#71717A',
+                            }
+                          : undefined
+                      }
                     >
-                      {expense.category}
+                      {expense.type === 'income' ? "Income" : (
+                        <span className="flex items-center gap-1">
+                          <span>{expense.category?.icon || '📝'}</span>
+                          <span>{expense.category?.name || 'Uncategorized'}</span>
+                        </span>
+                      )}
                     </span>
                   </TableCell>
                   <TableCell>
@@ -342,6 +430,40 @@ function GetAllExpenses() {
           </TableRow>
         </TableFooter>
       </Table>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Biggest Expense</CardTitle>
+          <CardDescription>Your largest transaction</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div>
+              <div className="text-2xl font-bold text-red-600">
+                ${formatAmount(biggestExpense.amount)}
+              </div>
+              <div className="text-sm font-medium">
+                {biggestExpense.title}
+              </div>
+            </div>
+            <Separator />
+            <div className="pt-2">
+              <span
+                className="inline-flex items-center rounded-full px-2 py-1 text-sm"
+                style={{
+                  backgroundColor: `${biggestExpense.category.color}15`,
+                  color: biggestExpense.category.color,
+                }}
+              >
+                <span className="flex items-center gap-1">
+                  <span>{biggestExpense.category.icon}</span>
+                  <span>{biggestExpense.category.name}</span>
+                </span>
+              </span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

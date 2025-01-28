@@ -20,17 +20,44 @@ export const Route = createFileRoute("/_authenticated/profile")({
   component: Profile,
 });
 
+interface Category {
+  id: number;
+  name: string;
+  color: string | null;
+  icon: string | null;
+}
+
 interface Expense {
   id: number;
   type: "expense" | "income";
-  category: string;
+  categoryId: number;
+  category: Category | null;
   date: string;
   title: string;
   amount: string;
 }
 
 interface ExpenseResponse {
-  expenses: Expense[];
+  expenses: Array<{
+    id: number;
+    type: "expense" | "income";
+    categoryId: number;
+    category: {
+      id: number;
+      name: string;
+      color: string | null;
+      icon: string | null;
+    } | null;
+    status: string;
+    date: string;
+    userId: string;
+    title: string;
+    description: string | null;
+    amount: string;
+    notes: string | null;
+    createdAt: string | null;
+    updatedAt: string | null;
+  }>;
   pagination: {
     total: number;
     pages: number;
@@ -55,7 +82,14 @@ function formatCurrency(amount: number) {
 async function fetchProfileStats(): Promise<ExpenseResponse> {
   const res = await api.v1.expenses.$get({ query: { limit: "500" } });
   if (!res.ok) throw new Error("Failed to fetch expenses");
-  return res.json();
+  const data = await res.json();
+  return {
+    expenses: data.expenses.map((expense: any) => ({
+      ...expense,
+      type: expense.type as "expense" | "income"
+    })),
+    pagination: data.pagination
+  };
 }
 
 function Profile() {
@@ -87,7 +121,8 @@ function Profile() {
   const categorySpending = expenses
     .filter((e) => e.type === "expense")
     .reduce<CategorySpending>((acc, e) => {
-      acc[e.category] = (acc[e.category] || 0) + Number(e.amount);
+      const categoryName = e.category?.name || 'Uncategorized';
+      acc[categoryName] = (acc[categoryName] || 0) + Number(e.amount);
       return acc;
     }, {});
 

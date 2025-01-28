@@ -127,7 +127,13 @@ interface DashboardData {
   expenses: Array<{
     id: number;
     type: string;
-    category: string;
+    categoryId: number;
+    category: {
+      id: number;
+      name: string;
+      color: string | null;
+      icon: string | null;
+    } | null;
     status: string;
     date: string;
     userId: string;
@@ -208,7 +214,7 @@ function Dashboard() {
   const categoryTotals = new Map<string, number>();
   let totalExpenses = 0;
   let totalIncome = 0;
-  let biggestExpense = { amount: 0, title: "", category: "" };
+  let biggestExpense = { amount: 0, title: "", category: { name: "", color: "", icon: "" } };
 
   data.expenses.forEach((expense) => {
     const date = expense.date.split("T")[0];
@@ -228,13 +234,19 @@ function Dashboard() {
         biggestExpense = {
           amount,
           title: expense.title,
-          category: expense.category,
+          category: {
+            name: expense.category?.name || 'Uncategorized',
+            color: expense.category?.color || '#71717A',
+            icon: expense.category?.icon || '📝'
+          }
         };
       }
 
       // Category totals
-      const currentTotal = categoryTotals.get(expense.category) || 0;
-      categoryTotals.set(expense.category, currentTotal + amount);
+      if (expense.category) {
+        const currentTotal = categoryTotals.get(expense.category.name) || 0;
+        categoryTotals.set(expense.category.name, currentTotal + amount);
+      }
     } else {
       daily.income += amount;
       totalIncome += amount;
@@ -492,10 +504,7 @@ function Dashboard() {
                     {pieChartData.map((entry, index) => (
                       <Cell
                         key={`cell-${index}`}
-                        fill={
-                          CATEGORY_COLORS[entry.category]?.chart ||
-                          CATEGORY_COLORS.Other.chart
-                        }
+                        fill={CATEGORY_COLORS[entry.category]?.chart || CATEGORY_COLORS.Other.chart}
                       />
                     ))}
                   </Pie>
@@ -526,15 +535,16 @@ function Dashboard() {
               <Separator />
               <div className="pt-2">
                 <span
-                  className={`inline-flex items-center ${
-                    CATEGORY_COLORS[biggestExpense.category]?.bg ||
-                    "bg-gray-100"
-                  } ${
-                    CATEGORY_COLORS[biggestExpense.category]?.text ||
-                    "text-gray-800"
-                  } px-2 py-1 rounded-full text-sm`}
+                  className="inline-flex items-center rounded-full px-2 py-1 text-sm"
+                  style={{
+                    backgroundColor: `${biggestExpense.category.color}15`,
+                    color: biggestExpense.category.color || '#71717A'
+                  }}
                 >
-                  {biggestExpense.category}
+                  <span className="flex items-center gap-1">
+                    <span>{biggestExpense.category.icon}</span>
+                    <span>{biggestExpense.category.name}</span>
+                  </span>
                 </span>
               </div>
             </div>

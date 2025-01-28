@@ -1,9 +1,81 @@
 {
-  "id": "804cbc93-9e20-4dc6-9b2b-8f576bed3907",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "50705969-651f-4b3d-9a61-81c751e846d2",
+  "prevId": "804cbc93-9e20-4dc6-9b2b-8f576bed3907",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
+    "public.categories": {
+      "name": "categories",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "type": {
+          "name": "type",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'expense'"
+        },
+        "icon": {
+          "name": "icon",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "color": {
+          "name": "color",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "categories_name_unique": {
+          "name": "categories_name_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "name"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.expenses": {
       "name": "expenses",
       "schema": "",
@@ -52,12 +124,11 @@
           "notNull": true,
           "default": "now()"
         },
-        "category": {
-          "name": "category",
-          "type": "varchar(50)",
+        "category_id": {
+          "name": "category_id",
+          "type": "integer",
           "primaryKey": false,
-          "notNull": true,
-          "default": "'uncategorized'"
+          "notNull": true
         },
         "notes": {
           "name": "notes",
@@ -122,7 +193,7 @@
           "name": "category_idx",
           "columns": [
             {
-              "expression": "category",
+              "expression": "category_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -134,7 +205,21 @@
           "with": {}
         }
       },
-      "foreignKeys": {},
+      "foreignKeys": {
+        "expenses_category_id_categories_id_fk": {
+          "name": "expenses_category_id_categories_id_fk",
+          "tableFrom": "expenses",
+          "tableTo": "categories",
+          "columnsFrom": [
+            "category_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
