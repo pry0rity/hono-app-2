@@ -1,26 +1,12 @@
 {
-  "version": "7",
-  "dialect": "postgresql",
+  "version": "5",
+  "dialect": "pg",
   "entries": [
     {
       "idx": 0,
       "version": "7",
-      "when": 1738035399456,
-      "tag": "0000_low_menace",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1738037818659,
-      "tag": "0001_amusing_skullbuster",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1738046701016,
-      "tag": "0002_glamorous_dagger",
+      "when": 1738053507953,
+      "tag": "0000_chief_misty_knight",
       "breakpoints": true
     }
   ]

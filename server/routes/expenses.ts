@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { z } from 'zod' 
+import { z } from 'zod'
 import { zValidator } from '@hono/zod-validator'
 
 import { getUser } from '../kinde'
@@ -51,19 +51,19 @@ export const expensesRoute = new Hono()
 
     // Build where conditions
     let conditions = [eq(expensesTable.userId, user.id)]
-    
+
     if (startDate && endDate) {
       conditions.push(between(expensesTable.date, new Date(startDate), new Date(endDate)))
     }
-    
+
     if (type && type !== 'all') {
       conditions.push(eq(expensesTable.type, type))
     }
-    
+
     if (category) {
       conditions.push(eq(expensesTable.category, category))
     }
-    
+
     if (status) {
       conditions.push(eq(expensesTable.status, status))
     }
@@ -83,7 +83,7 @@ export const expensesRoute = new Hono()
       .from(expensesTable)
       .where(and(...conditions))
 
-    return c.json({ 
+    return c.json({
       expenses,
       pagination: {
         total: Number(result.count),
@@ -145,7 +145,7 @@ export const expensesRoute = new Hono()
   // GET /expenses/categories - Returns list of used categories with counts
   .get('/categories', getUser, async (c) => {
     const user = c.var.user
-    
+
     const categories = await db
       .select({
         category: expensesTable.category,
@@ -162,7 +162,7 @@ export const expensesRoute = new Hono()
   .get('/:id{[0-9]+}', getUser, async (c) => {
     const id = c.req.param('id')
     const user = c.var.user
-    
+
     const expense = await db.select()
       .from(expensesTable)
       .where(
@@ -184,7 +184,7 @@ export const expensesRoute = new Hono()
     const user = c.var.user
     const now = new Date()
 
-    const result = await db.insert(expensesTable).values({ 
+    const result = await db.insert(expensesTable).values({
       ...expense,
       userId: user.id,
       date: expense.date || now,
@@ -193,7 +193,7 @@ export const expensesRoute = new Hono()
     })
 
     c.status(201)
-    return c.json({ result }) 
+    return c.json({ result })
   })
   // PUT /expenses/:id - Updates expense
   .put('/:id{[0-9]+}', zValidator('json', createExpenseSchema), getUser, async (c) => {
@@ -202,7 +202,7 @@ export const expensesRoute = new Hono()
     const user = c.var.user
 
     const result = await db.update(expensesTable)
-      .set({ 
+      .set({
         ...updates,
         updatedAt: new Date()
       })
@@ -239,7 +239,7 @@ export const expensesRoute = new Hono()
   .get('/total', getUser, async (c) => {
     const user = c.var.user
     const [result] = await db
-      .select({ 
+      .select({
         total: sql`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)::text`
       })
       .from(expensesTable)

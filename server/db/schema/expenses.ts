@@ -14,9 +14,9 @@ export const expenses = pgTable("expenses", {
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 },
-(expenses) => ({
-  userIdIdx: index("user_id_idx").on(expenses.userId),
-  dateIdx: index("date_idx").on(expenses.date),
-  categoryIdx: index("category_idx").on(expenses.category),
-})
+  (expenses) => ({
+    userIdIdx: index("user_id_idx").on(expenses.userId),
+    dateIdx: index("date_idx").on(expenses.date),
+    categoryIdx: index("category_idx").on(expenses.category),
+  })
 );

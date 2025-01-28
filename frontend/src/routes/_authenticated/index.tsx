@@ -144,6 +144,48 @@ interface DashboardData {
   };
 }
 
+// Add this custom tooltip component
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: Array<{
+    value: number;
+    name: string;
+    color: string;
+  }>;
+  label?: string;
+}
+
+function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
+  if (!active || !payload) return null;
+
+  return (
+    <div className="rounded-lg border bg-popover p-2 shadow-md">
+      <div className="text-sm font-medium text-popover-foreground mb-1">
+        {new Date(label || "").toLocaleDateString("en-US", {
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        })}
+      </div>
+      <div className="space-y-1">
+        {payload.map((item, index) => (
+          <div key={index} className="flex items-center gap-2">
+            <div
+              className="w-3 h-3 rounded-full"
+              style={{ backgroundColor: item.color }}
+            />
+            <span className="text-sm text-muted-foreground">{item.name}:</span>
+            <span className="text-sm font-medium text-popover-foreground">
+              {formatCurrency(item.value)}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function Dashboard() {
   const [preferences, setPreferences] = useDashboardPreferences();
   const { data, isLoading } = useQuery<DashboardData>({
@@ -362,7 +404,10 @@ function Dashboard() {
           <div className="h-[400px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={lineChartData}>
-                <CartesianGrid strokeDasharray="3 3" />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  className="stroke-border"
+                />
                 <XAxis
                   dataKey="date"
                   tick={{ fontSize: 12 }}
@@ -372,24 +417,18 @@ function Dashboard() {
                       day: "numeric",
                     })
                   }
+                  stroke="currentColor"
+                  className="text-muted-foreground"
                 />
                 <YAxis
                   tick={{ fontSize: 12 }}
                   tickFormatter={(value) =>
                     formatCurrency(value).replace(".00", "")
                   }
+                  stroke="currentColor"
+                  className="text-muted-foreground"
                 />
-                <Tooltip
-                  formatter={(value: number) => formatCurrency(value)}
-                  labelFormatter={(label) =>
-                    new Date(label).toLocaleDateString("en-US", {
-                      weekday: "long",
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })
-                  }
-                />
+                <Tooltip content={<CustomTooltip />} />
                 <Legend />
                 {preferences.lineView === "combined" &&
                 preferences.chartView === "cumulative" ? (
@@ -406,6 +445,7 @@ function Dashboard() {
                     <Line
                       type="monotone"
                       dataKey="Income"
+                      name="Income"
                       stroke="#22c55e"
                       strokeWidth={2}
                       dot={false}
@@ -413,6 +453,7 @@ function Dashboard() {
                     <Line
                       type="monotone"
                       dataKey="Expenses"
+                      name="Expenses"
                       stroke="#ef4444"
                       strokeWidth={2}
                       dot={false}
@@ -468,11 +509,11 @@ function Dashboard() {
         </Card>
 
         <Card>
-          <CardHeader>
+      <CardHeader>
             <CardTitle>Biggest Expense</CardTitle>
             <CardDescription>Your largest transaction</CardDescription>
-          </CardHeader>
-          <CardContent>
+      </CardHeader>
+      <CardContent>
             <div className="space-y-4">
               <div>
                 <div className="text-2xl font-bold text-red-600">
@@ -497,8 +538,8 @@ function Dashboard() {
                 </span>
               </div>
             </div>
-          </CardContent>
-        </Card>
+      </CardContent>
+    </Card>
       </div>
     </div>
   );

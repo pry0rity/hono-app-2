@@ -20,17 +20,17 @@ async function seed() {
   try {
     // Delete existing records
     await db.delete(expenses)
-    
+
     // Create expenses spread across the last year
     const testUserId = process.env.TEST_USER_ID! // Replace with your test user ID
     const numberOfExpenses = 500; // Increased to 500 expenses
     const today = new Date()
     const oneYearAgo = new Date(today.getTime() - (365 * 24 * 60 * 60 * 1000))
-    
+
     const fakeExpenses = Array.from({ length: numberOfExpenses }, (_, index) => {
       // Distribute dates evenly across the year
       const date = new Date(
-        oneYearAgo.getTime() + 
+        oneYearAgo.getTime() +
         (index * (today.getTime() - oneYearAgo.getTime()) / numberOfExpenses)
       )
 
@@ -146,10 +146,10 @@ async function seed() {
 
     // Insert fake expenses
     const result = await db.insert(expenses).values(fakeExpenses)
-    
+
     console.log('✅ Seeding completed successfully')
     console.log(`Inserted ${fakeExpenses.length} expenses from ${oneYearAgo.toLocaleDateString()} to ${today.toLocaleDateString()}`)
-    
+
     process.exit(0)
   } catch (error) {
     console.error('❌ Seeding failed:', error)

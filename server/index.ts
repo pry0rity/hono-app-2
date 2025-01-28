@@ -1,7 +1,7 @@
 import app from './app'
 import * as Sentry from "@sentry/bun";
 
-// Initialize Sentry
+// Sentry DSN is safe to expose in source control
 Sentry.init({
   dsn: "https://38b1b3405c4803acb3576e67046fa0cf@o4508695687725056.ingest.us.sentry.io/4508719050391552",
   environment: process.env.NODE_ENV || 'development',
@@ -16,6 +16,7 @@ Bun.serve({
       const response = await app.fetch(request, server);
       return response;
     } catch (error) {
+      // Report errors to Sentry but still throw them
       Sentry.captureException(error);
       throw error;
     }
