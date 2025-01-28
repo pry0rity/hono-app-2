@@ -15,13 +15,13 @@ function RouteComponent() {
   const form = useForm({
     defaultValues: {
       title: "",
-      amount: 0,
+      amount: "",
     },
     onSubmit: async ({ value }) => {
       // Do something with form data
       await new Promise((resolve) => setTimeout(resolve, 1000));
-
       const response = await api.v1.expenses.$post({ json: value });
+
       if (!response.ok) {
         throw new Error("Failed to create expense");
       }
@@ -73,7 +73,7 @@ function RouteComponent() {
                   value={field.state.value}
                   onBlur={field.handleBlur}
                   type="number"
-                  onChange={(e) => field.handleChange(Number(e.target.value))}
+                  onChange={(e) => field.handleChange(e.target.value)}
                 />
                 {field.state.meta.isTouched &&
                 field.state.meta.errors.length ? (
