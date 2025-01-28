@@ -15,6 +15,13 @@
       "when": 1738037818659,
       "tag": "0001_amusing_skullbuster",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1738046701016,
+      "tag": "0002_glamorous_dagger",
+      "breakpoints": true
     }
   ]
 }
