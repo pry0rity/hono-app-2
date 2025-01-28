@@ -4,55 +4,119 @@ import { zValidator } from '@hono/zod-validator'
 
 import { getUser } from '../kinde'
 
+import db from '../db'
+import { expenses as expensesTable } from '../db/schema/expenses'
+import { and, eq, desc, count, sum } from 'drizzle-orm'
+
 // Define schema for expense validation
 const expenseSchema = z.object({
   id: z.number().int().positive(),
-  title: z.string().min(3).max(100), 
-  amount: z.number().min(0).max(1000000),
-}) 
+  title: z.string().min(3).max(100),
+  amount: z.string(),
+  createdAt: z.date().optional(),
+})
+
+// Schema for pagination query
+const paginationSchema = z.object({
+  page: z.string().transform(Number).default('1'),
+  limit: z.string().transform(Number).default('10'),
+})
 
 // Schema for creating new expenses (omits id since it's auto-generated)
-const createExpenseSchema = expenseSchema.omit({ id: true })
+const createExpenseSchema = expenseSchema.omit({ id: true, createdAt: true })
 
 // TypeScript type for expense objects
 type Expense = z.infer<typeof expenseSchema>
 
-const fakeExpenses: Expense[] = [
-  { id: 1, title: 'Expense 1', amount: 100},
-  { id: 2, title: 'Expense 2', amount: 200},
-  { id: 3, title: 'Expense 3', amount: 300},
-]
-
 // Create new Hono router instance for expenses routes
 export const expensesRoute = new Hono()
-  .get('/', getUser, (c) => {
-    return c.json({ expenses: fakeExpenses })
+  .get('/', getUser, zValidator('query', paginationSchema), async (c) => {
+    const user = c.var.user
+    const { page, limit } = c.req.valid('query')
+    
+    // Calculate offset
+    const offset = (page - 1) * limit
+
+    // Get paginated expenses
+    const expenses = await db
+      .select()
+      .from(expensesTable)
+      .where(eq(expensesTable.userId, user.id))
+      .orderBy(desc(expensesTable.createdAt))
+      .limit(limit)
+      .offset(offset)
+
+    // Get total count for pagination
+    const [result] = await db
+      .select({ count: count() })
+      .from(expensesTable)
+      .where(eq(expensesTable.userId, user.id))
+
+    return c.json({ 
+      expenses,
+      pagination: {
+        total: Number(result.count),
+        page,
+        limit,
+        pages: Math.ceil(Number(result.count) / limit)
+      }
+    })
   })
-  .get('/total-spent', getUser, (c) => {
-    const total = fakeExpenses.reduce((acc, expense) => acc + expense.amount, 0)
-    return c.json({ total })
+  .get('/total-spent', getUser, async (c) => {
+    const user = c.var.user
+    const [result] = await db
+      .select({ 
+        total: sum(expensesTable.amount)
+      })
+      .from(expensesTable)
+      .where(eq(expensesTable.userId, user.id))
+
+    return c.json({ total: result.total || '0' })
   })
-  .get('/:id{[0-9]+}', getUser, (c) => {
-    const id = c.req.param('id') 
-    const expense = fakeExpenses.find(expense => expense.id === Number(id))
-    if (!expense) {
+  .get('/:id{[0-9]+}', getUser, async (c) => {
+    const id = c.req.param('id')
+    const user = c.var.user
+    
+    const expense = await db.select()
+      .from(expensesTable)
+      .where(
+        and(
+          eq(expensesTable.id, Number(id)),
+          eq(expensesTable.userId, user.id)
+        )
+      )
+      .limit(1)
+
+    if (!expense.length) {
       return c.notFound()
     }
-    return c.json({ expense })
+    return c.json({ expense: expense[0] })
   })
   .post('/', zValidator('json', createExpenseSchema), getUser, async (c) => {
     const expense = c.req.valid('json')
-    fakeExpenses.push({ ...expense, id: fakeExpenses.length + 1 })
+    const user = c.var.user
+
+    const result = await db.insert(expensesTable).values({ 
+      ...expense,
+      userId: c.var.user.id,
+      // createdAt will be set by database default
+    })
+
     c.status(201)
-    return c.json({ expense }) 
+    return c.json({ result }) 
   })  
-  .delete('/:id{[0-9]+}', getUser, (c) => {
-    const id = c.req.param('id') 
-    const expense = fakeExpenses.find(expense => expense.id === Number(id))
-    if (!expense) {
+  .delete('/:id{[0-9]+}', getUser, async (c) => {
+    const id = c.req.param('id')
+    const user = c.var.user
+
+    const result = await db.delete(expensesTable)
+      .where(and(
+        eq(expensesTable.id, Number(id)),
+        eq(expensesTable.userId, user.id)
+      ))
+
+    if (!result.length) {
       return c.notFound()
     }
-    const index = fakeExpenses.findIndex(expense => expense.id === Number(id))
-    fakeExpenses.splice(index, 1)
-    return c.json({ expense })
+    return c.json({ success: true })
   })
