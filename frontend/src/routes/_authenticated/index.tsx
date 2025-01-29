@@ -214,7 +214,11 @@ function Dashboard() {
   const categoryTotals = new Map<string, number>();
   let totalExpenses = 0;
   let totalIncome = 0;
-  let biggestExpense = { amount: 0, title: "", category: { name: "", color: "", icon: "" } };
+  let biggestExpense = {
+    amount: 0,
+    title: "",
+    category: { name: "", color: "", icon: "" },
+  };
 
   data.expenses.forEach((expense) => {
     const date = expense.date.split("T")[0];
@@ -235,10 +239,10 @@ function Dashboard() {
           amount,
           title: expense.title,
           category: {
-            name: expense.category?.name || 'Uncategorized',
-            color: expense.category?.color || '#71717A',
-            icon: expense.category?.icon || '📝'
-          }
+            name: expense.category?.name || "Uncategorized",
+            color: expense.category?.color || "#71717A",
+            icon: expense.category?.icon || "📝",
+          },
         };
       }
 
@@ -504,7 +508,10 @@ function Dashboard() {
                     {pieChartData.map((entry, index) => (
                       <Cell
                         key={`cell-${index}`}
-                        fill={CATEGORY_COLORS[entry.category]?.chart || CATEGORY_COLORS.Other.chart}
+                        fill={
+                          CATEGORY_COLORS[entry.category]?.chart ||
+                          CATEGORY_COLORS.Other.chart
+                        }
                       />
                     ))}
                   </Pie>
@@ -518,11 +525,11 @@ function Dashboard() {
         </Card>
 
         <Card>
-      <CardHeader>
+          <CardHeader>
             <CardTitle>Biggest Expense</CardTitle>
             <CardDescription>Your largest transaction</CardDescription>
-      </CardHeader>
-      <CardContent>
+          </CardHeader>
+          <CardContent>
             <div className="space-y-4">
               <div>
                 <div className="text-2xl font-bold text-red-600">
@@ -538,7 +545,7 @@ function Dashboard() {
                   className="inline-flex items-center rounded-full px-2 py-1 text-sm"
                   style={{
                     backgroundColor: `${biggestExpense.category.color}15`,
-                    color: biggestExpense.category.color || '#71717A'
+                    color: biggestExpense.category.color || "#71717A",
                   }}
                 >
                   <span className="flex items-center gap-1">
@@ -548,8 +555,8 @@ function Dashboard() {
                 </span>
               </div>
             </div>
-      </CardContent>
-    </Card>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

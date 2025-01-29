@@ -15,62 +15,16 @@ import {
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
 } from "@heroicons/react/24/solid";
+import {
+  Expense,
+  ExpenseResponse,
+  CategorySpending,
+  MonthlySpending,
+} from "@/lib/types";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   component: Profile,
 });
-
-interface Category {
-  id: number;
-  name: string;
-  color: string | null;
-  icon: string | null;
-}
-
-interface Expense {
-  id: number;
-  type: "expense" | "income";
-  categoryId: number;
-  category: Category | null;
-  date: string;
-  title: string;
-  amount: string;
-}
-
-interface ExpenseResponse {
-  expenses: Array<{
-    id: number;
-    type: "expense" | "income";
-    categoryId: number;
-    category: {
-      id: number;
-      name: string;
-      color: string | null;
-      icon: string | null;
-    } | null;
-    status: string;
-    date: string;
-    userId: string;
-    title: string;
-    description: string | null;
-    amount: string;
-    notes: string | null;
-    createdAt: string | null;
-    updatedAt: string | null;
-  }>;
-  pagination: {
-    total: number;
-    pages: number;
-  };
-}
-
-interface CategorySpending {
-  [category: string]: number;
-}
-
-interface MonthlySpending {
-  [month: number]: number;
-}
 
 function formatCurrency(amount: number) {
   return new Intl.NumberFormat("en-US", {
@@ -79,16 +33,23 @@ function formatCurrency(amount: number) {
   }).format(amount);
 }
 
+interface RawExpense extends Omit<Expense, "type" | "status"> {
+  type: string;
+  status: string;
+}
+
 async function fetchProfileStats(): Promise<ExpenseResponse> {
   const res = await api.v1.expenses.$get({ query: { limit: "500" } });
   if (!res.ok) throw new Error("Failed to fetch expenses");
   const data = await res.json();
+
   return {
-    expenses: data.expenses.map((expense: any) => ({
+    expenses: data.expenses.map((expense: RawExpense) => ({
       ...expense,
-      type: expense.type as "expense" | "income"
+      type: expense.type as "expense" | "income",
+      status: expense.status as "cleared" | "pending" | "reconciled",
     })),
-    pagination: data.pagination
+    pagination: data.pagination,
   };
 }
 
@@ -114,14 +75,14 @@ function Profile() {
   // Process stats data
   const expenses = statsData?.expenses || [];
   const totalSpent = expenses
-    .filter((e) => e.type === "expense")
-    .reduce((sum, e) => sum + Number(e.amount), 0);
+    .filter((e: Expense) => e.type === "expense")
+    .reduce((sum: number, e: Expense) => sum + Number(e.amount), 0);
 
   // Get favorite categories
   const categorySpending = expenses
-    .filter((e) => e.type === "expense")
+    .filter((e: Expense) => e.type === "expense")
     .reduce<CategorySpending>((acc, e) => {
-      const categoryName = e.category?.name || 'Uncategorized';
+      const categoryName = e.category?.name || "Uncategorized";
       acc[categoryName] = (acc[categoryName] || 0) + Number(e.amount);
       return acc;
     }, {});
@@ -134,7 +95,7 @@ function Profile() {
   const currentMonth = new Date().getMonth();
   const currentYearSpending = expenses
     .filter(
-      (e) =>
+      (e: Expense) =>
         e.type === "expense" &&
         new Date(e.date).getFullYear() === new Date().getFullYear()
     )

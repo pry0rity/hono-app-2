@@ -20,21 +20,20 @@ import {
   TableFooter,
   TableRow,
 } from "@/components/ui/table";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-
-const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
-  "Food & Dining": { bg: "bg-orange-100", text: "text-orange-800" },
-  Transportation: { bg: "bg-blue-100", text: "text-blue-800" },
-  Shopping: { bg: "bg-pink-100", text: "text-pink-800" },
-  "Bills & Utilities": { bg: "bg-yellow-100", text: "text-yellow-800" },
-  Entertainment: { bg: "bg-purple-100", text: "text-purple-800" },
-  "Health & Fitness": { bg: "bg-green-100", text: "text-green-800" },
-  Travel: { bg: "bg-indigo-100", text: "text-indigo-800" },
-  Home: { bg: "bg-red-100", text: "text-red-800" },
-  Education: { bg: "bg-cyan-100", text: "text-cyan-800" },
-  Other: { bg: "bg-gray-100", text: "text-gray-800" },
-};
+import {
+  Expense,
+  ExpenseResponse,
+  CategoryResponse,
+  Category,
+} from "@/lib/types";
 
 const formatAmount = (amount: number) =>
   amount.toLocaleString("en-US", {
@@ -46,35 +45,13 @@ export const Route = createFileRoute("/_authenticated/expenses")({
   component: GetAllExpenses,
 });
 
-interface Category {
-  id: number;
-  name: string;
-  color: string | null;
-  icon: string | null;
-}
-
-interface Expense {
-  id: number;
-  type: 'expense' | 'income';
-  categoryId: number;
-  category: Category;
+interface RawExpense extends Omit<Expense, "type" | "status"> {
+  type: string;
   status: string;
-  date: string;
-  userId: string;
-  title: string;
-  description: string | null;
-  amount: string;
-  notes: string | null;
-  createdAt: string | null;
-  updatedAt: string | null;
 }
 
-interface DashboardData {
-  expenses: Expense[];
-  pagination: {
-    total: number;
-    pages: number;
-  };
+interface RawCategory extends Omit<Category, "type"> {
+  type: string;
 }
 
 async function fetchExpenses(
@@ -83,7 +60,7 @@ async function fetchExpenses(
   year: string,
   month: string,
   category: string
-) {
+): Promise<ExpenseResponse> {
   const query: Record<string, string> = {
     page: page.toString(),
     limit: limit.toString(),
@@ -98,16 +75,28 @@ async function fetchExpenses(
   const res = await api.v1.expenses.$get({ query });
   if (res.ok) {
     const data = await res.json();
-    return data;
+    return {
+      expenses: data.expenses.map((expense: RawExpense) => ({
+        ...expense,
+        type: expense.type as "expense" | "income",
+        status: expense.status as "cleared" | "pending" | "reconciled",
+      })),
+      pagination: data.pagination,
+    };
   }
   throw new Error("Failed to fetch expenses");
 }
 
-async function fetchCategories() {
+async function fetchCategories(): Promise<CategoryResponse> {
   const res = await api.v1.expenses.categories.$get();
   if (res.ok) {
     const data = await res.json();
-    return data.categories;
+    return {
+      categories: data.categories.map((category: RawCategory) => ({
+        ...category,
+        type: category.type as "expense" | "income",
+      })),
+    };
   }
   throw new Error("Failed to fetch categories");
 }
@@ -134,12 +123,15 @@ function GetAllExpenses() {
   if (error) return `Error: ${error.message}`;
   if (!data?.expenses) return null;
 
+  let biggestExpense = {
+    amount: 0,
+    title: "",
+    category: { name: "", color: "", icon: "" },
+  };
+
   // Process data for charts
   const expensesByDay = new Map<string, { expenses: number; income: number }>();
   const categoryTotals = new Map<string, number>();
-  let totalExpenses = 0;
-  let totalIncome = 0;
-  let biggestExpense = { amount: 0, title: "", category: { name: "", color: "", icon: "" } };
 
   data.expenses.forEach((expense) => {
     const date = expense.date.split("T")[0];
@@ -150,9 +142,9 @@ function GetAllExpenses() {
       expensesByDay.set(date, { expenses: 0, income: 0 });
     }
     const daily = expensesByDay.get(date)!;
+
     if (expense.type === "expense") {
       daily.expenses += amount;
-      totalExpenses += amount;
 
       // Track biggest expense
       if (amount > biggestExpense.amount) {
@@ -160,9 +152,9 @@ function GetAllExpenses() {
           amount,
           title: expense.title,
           category: {
-            name: expense.category?.name || 'Uncategorized',
-            color: expense.category?.color || '#71717A',
-            icon: expense.category?.icon || '📝',
+            name: expense.category?.name || "Uncategorized",
+            color: expense.category?.color || "#71717A",
+            icon: expense.category?.icon || "📝",
           },
         };
       }
@@ -174,7 +166,6 @@ function GetAllExpenses() {
       }
     } else {
       daily.income += amount;
-      totalIncome += amount;
     }
   });
 
@@ -237,7 +228,7 @@ function GetAllExpenses() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Categories</SelectItem>
-              {categories?.map((cat) => (
+              {categories?.categories?.map((cat) => (
                 <SelectItem key={cat.id} value={cat.name}>
                   <span className="flex items-center gap-1">
                     <span>{cat.icon}</span>
@@ -340,21 +331,27 @@ function GetAllExpenses() {
                   <TableCell>
                     <span
                       className={`inline-flex items-center rounded-full px-2 py-1 text-sm ${
-                        expense.type === 'income' ? "bg-green-100 text-green-800" : ""
+                        expense.type === "income"
+                          ? "bg-green-100 text-green-800"
+                          : ""
                       }`}
                       style={
-                        expense.type !== 'income' && expense.category?.color
+                        expense.type !== "income" && expense.category?.color
                           ? {
                               backgroundColor: `${expense.category.color}15`,
-                              color: expense.category.color || '#71717A',
+                              color: expense.category.color || "#71717A",
                             }
                           : undefined
                       }
                     >
-                      {expense.type === 'income' ? "Income" : (
+                      {expense.type === "income" ? (
+                        "Income"
+                      ) : (
                         <span className="flex items-center gap-1">
-                          <span>{expense.category?.icon || '📝'}</span>
-                          <span>{expense.category?.name || 'Uncategorized'}</span>
+                          <span>{expense.category?.icon || "📝"}</span>
+                          <span>
+                            {expense.category?.name || "Uncategorized"}
+                          </span>
                         </span>
                       )}
                     </span>
@@ -442,9 +439,7 @@ function GetAllExpenses() {
               <div className="text-2xl font-bold text-red-600">
                 ${formatAmount(biggestExpense.amount)}
               </div>
-              <div className="text-sm font-medium">
-                {biggestExpense.title}
-              </div>
+              <div className="text-sm font-medium">{biggestExpense.title}</div>
             </div>
             <Separator />
             <div className="pt-2">
