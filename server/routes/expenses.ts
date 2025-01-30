@@ -178,7 +178,7 @@ export const expensesRoute = new Hono()
       description: expense.description,
       amount: expense.amount,
       type: expense.type,
-      date: expense.date || now,
+      date: new Date(expense.date),
       categoryId: expense.categoryId,
       notes: expense.notes,
       status: expense.status,
@@ -198,6 +198,7 @@ export const expensesRoute = new Hono()
     const result = await db.update(expensesTable)
       .set({
         ...updates,
+        date: new Date(updates.date),
         updatedAt: new Date()
       })
       .where(
