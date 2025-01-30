@@ -8,39 +8,7 @@ import db from '../db'
 import { expenses as expensesTable } from '../db/schema/expenses'
 import { categories as categoriesTable } from '../db/schema/categories'
 import { and, eq, desc, count, sum, sql, between, like, or, SQL, asc } from 'drizzle-orm'
-
-// Define schema for expense validation
-const expenseSchema = z.object({
-  id: z.number().int().positive(),
-  title: z.string().min(3).max(100),
-  description: z.string().optional(),
-  amount: z.string(),
-  type: z.enum(['expense', 'income']).default('expense'),
-  date: z.date().default(() => new Date()),
-  categoryId: z.number().int().positive(),
-  notes: z.string().optional(),
-  status: z.enum(['cleared', 'pending', 'reconciled']).default('cleared'),
-  createdAt: z.date().optional(),
-  updatedAt: z.date().optional(),
-})
-
-// Schema for pagination and filtering
-const filterSchema = z.object({
-  page: z.string().transform(Number).default('1'),
-  limit: z.string().transform(Number).default('10'),
-  startDate: z.string().optional(),
-  endDate: z.string().optional(),
-  type: z.enum(['expense', 'income', 'all']).default('all'),
-  category: z.string().optional(),
-  status: z.string().optional(),
-  search: z.string().optional(),
-})
-
-// Schema for creating new expenses
-const createExpenseSchema = expenseSchema.omit({ id: true, createdAt: true, updatedAt: true })
-
-// TypeScript type for expense objects
-type Expense = z.infer<typeof expenseSchema>
+import { expenseSchema, createExpenseSchema, filterSchema,  } from "../sharedTypes";
 
 // Create new Hono router instance for expenses routes
 export const expensesRoute = new Hono()

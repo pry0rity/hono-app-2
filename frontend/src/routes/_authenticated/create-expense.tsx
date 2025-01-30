@@ -20,20 +20,10 @@ import {
 } from "@/components/ui/table";
 import { useForm } from "@tanstack/react-form";
 import { api } from "@/lib/api";
+import { type CreateExpense, createExpenseSchema } from "@server/sharedTypes";
 
 type ExpenseType = "expense" | "income";
 type ExpenseStatus = "cleared" | "pending" | "reconciled";
-
-interface ExpenseFormData {
-  title: string;
-  description: string;
-  amount: string;
-  type: ExpenseType;
-  category: string;
-  date: string;
-  status: ExpenseStatus;
-  notes: string;
-}
 
 const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
   "Food & Dining": { bg: "bg-orange-100", text: "text-orange-800" },
@@ -54,41 +44,46 @@ export const Route = createFileRoute("/_authenticated/create-expense")({
 
 function RouteComponent() {
   const navigate = useNavigate();
+  const categoryNames = Object.keys(CATEGORY_COLORS);
 
   const formatAmount = (amount: string) => {
     const num = Number(amount);
-    if (isNaN(num)) return "0.00";
-    return num.toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
+    return isNaN(num) ? "0.00" : num.toFixed(2);
   };
 
-  const form = useForm<ExpenseFormData>({
+  const form = useForm<CreateExpense>({
     defaultValues: {
       title: "",
       description: "",
       amount: "",
       type: "expense",
-      category: "",
-      date: new Date().toISOString().split("T")[0],
-      status: "cleared",
+      date: new Date(),
+      categoryId: 1,
       notes: "",
+      status: "cleared",
+    },
+    validators: {
+      onChange: createExpenseSchema,
     },
     onSubmit: async ({ value }) => {
-      const response = await api.v1.expenses.$post({
-        json: {
-          ...value,
-          amount: value.amount,
-          date: new Date(value.date),
-        },
-      });
+      try {
+        const response = await api.v1.expenses.$post({
+          json: {
+            ...value,
+            date:
+              value.date instanceof Date ? value.date : new Date(value.date),
+          },
+        });
 
-      if (!response.ok) {
-        throw new Error("Failed to create expense");
+        if (!response.ok) {
+          throw new Error("Failed to create expense");
+        }
+
+        navigate({ to: "/expenses" });
+      } catch (error) {
+        console.error("Failed to create expense:", error);
+        throw error;
       }
-
-      navigate({ to: "/expenses" });
     },
   });
 
@@ -138,15 +133,6 @@ function RouteComponent() {
           <div className="space-y-2">
             <form.Field
               name="amount"
-              validators={{
-                onChange: (value) => {
-                  if (!value) return "Amount is required";
-                  if (isNaN(Number(value))) return "Amount must be a number";
-                  if (Number(value) <= 0)
-                    return "Amount must be greater than 0";
-                  return undefined;
-                },
-              }}
               children={(field) => (
                 <div>
                   <Label htmlFor={field.name}>Amount</Label>
@@ -154,12 +140,14 @@ function RouteComponent() {
                     id={field.name}
                     name={field.name}
                     value={field.state.value}
-                    onBlur={field.handleBlur}
                     type="number"
-                    step="0.01"
+                    step="1"
                     min="0"
                     placeholder="0.00"
                     onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={(e) =>
+                      field.handleChange(formatAmount(e.target.value))
+                    }
                   />
                   {field.state.meta.errors?.length ? (
                     <p className="text-sm text-red-500 mt-1">
@@ -206,7 +194,7 @@ function RouteComponent() {
 
           <div className="space-y-2">
             <form.Field
-              name="category"
+              name="categoryId"
               validators={{
                 onChange: (value) =>
                   !value ? "Category is required" : undefined,
@@ -215,15 +203,20 @@ function RouteComponent() {
                 <div>
                   <Label htmlFor={field.name}>Category</Label>
                   <Select
-                    value={field.state.value}
-                    onValueChange={field.handleChange}
+                    value={(field.state.value ?? 1).toString()}
+                    onValueChange={(value: string) =>
+                      field.handleChange(Number(value))
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.keys(CATEGORY_COLORS).map((category) => (
-                        <SelectItem key={category} value={category}>
+                      {categoryNames.map((category, index) => (
+                        <SelectItem
+                          key={category}
+                          value={(index + 1).toString()}
+                        >
                           <span
                             className={`inline-flex items-center ${CATEGORY_COLORS[category].bg} ${CATEGORY_COLORS[category].text} px-2 py-1 rounded-full text-sm`}
                           >
@@ -255,9 +248,11 @@ function RouteComponent() {
                   <Input
                     id={field.name}
                     name={field.name}
-                    value={field.state.value}
+                    value={field.state.value?.toISOString().split("T")[0]}
                     type="date"
-                    onChange={(e) => field.handleChange(e.target.value)}
+                    onChange={(e) =>
+                      field.handleChange(new Date(e.target.value))
+                    }
                   />
                   {field.state.meta.errors?.length ? (
                     <p className="text-sm text-red-500 mt-1">
@@ -346,80 +341,79 @@ function RouteComponent() {
             state.values.title,
             state.values.amount,
             state.values.type,
-            state.values.category,
+            state.values.categoryId,
             state.values.date,
           ]}
         >
-          {([title, amount, type, category, date]) => (
-            <div className="rounded-lg border">
-              <div className="p-4 bg-muted/50">
-                <h2 className="font-medium">Preview</h2>
-                <p className="text-sm text-muted-foreground">
-                  Here's how your transaction will appear in the list
-                </p>
-              </div>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Time</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableRow
-                    className={type === "income" ? "text-green-600" : ""}
-                  >
-                    <TableCell>{title || "(Title)"}</TableCell>
-                    <TableCell>
-                      {category ? (
-                        <span
-                          className={`inline-flex items-center ${
-                            type === "income"
-                              ? "bg-green-100 text-green-800"
-                              : `${CATEGORY_COLORS[category]?.bg || "bg-gray-100"} ${
-                                  CATEGORY_COLORS[category]?.text ||
-                                  "text-gray-800"
-                                }`
-                          } px-2 py-1 rounded-full text-sm`}
-                        >
-                          {category}
-                        </span>
-                      ) : (
-                        "(Category)"
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {date
-                        ? new Date(date).toLocaleDateString()
-                        : new Date().toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                      {date
-                        ? new Date(date).toLocaleTimeString([], {
-                            hour: "numeric",
-                            minute: "2-digit",
-                          })
-                        : new Date().toLocaleTimeString([], {
-                            hour: "numeric",
-                            minute: "2-digit",
-                          })}
-                    </TableCell>
-                    <TableCell
-                      className={`text-right ${
-                        type === "income" ? "text-green-600" : "text-red-600"
-                      }`}
+          {([title, amount, type, categoryId, date]) => {
+            const categoryIndex = Number(categoryId || 1) - 1;
+            const category = categoryNames[categoryIndex] || "";
+            const dateObj = date instanceof Date ? date : new Date();
+            const dateStr = dateObj.toLocaleDateString();
+            const timeStr = dateObj.toLocaleTimeString([], {
+              hour: "numeric",
+              minute: "2-digit",
+            });
+
+            return (
+              <div className="rounded-lg border">
+                <div className="p-4 bg-muted/50">
+                  <h2 className="font-medium">Preview</h2>
+                  <p className="text-sm text-muted-foreground">
+                    Here's how your transaction will appear in the list
+                  </p>
+                </div>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Title</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Time</TableHead>
+                      <TableHead className="text-right">Amount</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <TableRow
+                      className={type === "income" ? "text-green-600" : ""}
                     >
-                      {type === "income" ? "+" : "-"}$
-                      {amount ? formatAmount(amount) : "0.00"}
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </div>
-          )}
+                      <TableCell>{title?.toString() || "(Title)"}</TableCell>
+                      <TableCell>
+                        {category ? (
+                          <span
+                            className={`inline-flex items-center ${
+                              type === "income"
+                                ? "bg-green-100 text-green-800"
+                                : `${CATEGORY_COLORS[category]?.bg || "bg-gray-100"} ${
+                                    CATEGORY_COLORS[category]?.text ||
+                                    "text-gray-800"
+                                  }`
+                            } px-2 py-1 rounded-full text-sm`}
+                          >
+                            {category}
+                          </span>
+                        ) : (
+                          "(Category)"
+                        )}
+                      </TableCell>
+                      <TableCell>{dateStr}</TableCell>
+                      <TableCell>{timeStr}</TableCell>
+                      <TableCell
+                        className={`text-right ${
+                          type === "income" ? "text-green-600" : "text-red-600"
+                        }`}
+                      >
+                        {type === "income" ? "+" : "-"}$
+                        {typeof amount === "string"
+                          ? formatAmount(amount)
+                          : "0.00"}
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </div>
+            );
+          }}
         </form.Subscribe>
 
         <div className="flex gap-4">
