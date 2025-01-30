@@ -69,26 +69,24 @@ function RouteComponent() {
   };
 
   const form = useForm<CreateExpense>({
+    validators: {
+      onChange: createExpenseSchema,
+    },
     defaultValues: {
       title: "",
       description: "",
       amount: "",
       type: "expense",
-      date: new Date(),
+      date: new Date().toISOString(),
       categoryId: 1,
       notes: "",
       status: "cleared",
-    },
-    validators: {
-      onChange: createExpenseSchema,
     },
     onSubmit: async ({ value }) => {
       try {
         const response = await api.v1.expenses.$post({
           json: {
             ...value,
-            date:
-              value.date instanceof Date ? value.date : new Date(value.date),
           },
         });
 
@@ -264,11 +262,9 @@ function RouteComponent() {
                   <Input
                     id={field.name}
                     name={field.name}
-                    value={field.state.value?.toISOString().split("T")[0]}
+                    value={field.state.value}
                     type="date"
-                    onChange={(e) =>
-                      field.handleChange(new Date(e.target.value))
-                    }
+                    onChange={(e) => field.handleChange(e.target.value)}
                   />
                   {field.state.meta.errors?.length ? (
                     <p className="text-sm text-red-500 mt-1">
@@ -365,7 +361,7 @@ function RouteComponent() {
             const category = categoriesData?.categories.find(
               (c) => c.id === categoryId
             );
-            const dateObj = date instanceof Date ? date : new Date();
+            const dateObj = new Date(date);
             const dateStr = dateObj.toLocaleDateString();
             const timeStr = dateObj.toLocaleTimeString([], {
               hour: "numeric",
