@@ -7,7 +7,7 @@ export const expenseSchema = z.object({
   description: z.string().optional(),
   amount: z.string(),
   type: z.enum(['expense', 'income']),
-  date: z.string(),
+  date: z.string().datetime(),
   categoryId: z.number().int().positive(),
   notes: z.string().optional(),
   status: z.enum(['cleared', 'pending', 'reconciled']),

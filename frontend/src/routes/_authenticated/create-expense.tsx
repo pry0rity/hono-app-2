@@ -262,9 +262,16 @@ function RouteComponent() {
                   <Input
                     id={field.name}
                     name={field.name}
-                    value={field.state.value}
-                    type="date"
-                    onChange={(e) => field.handleChange(e.target.value)}
+                    value={
+                      field.state.value
+                        ? new Date(field.state.value).toISOString().slice(0, 16)
+                        : ""
+                    }
+                    type="datetime-local"
+                    onChange={(e) => {
+                      const date = new Date(e.target.value);
+                      field.handleChange(date.toISOString());
+                    }}
                   />
                   {field.state.meta.errors?.length ? (
                     <p className="text-sm text-red-500 mt-1">
