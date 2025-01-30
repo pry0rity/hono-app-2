@@ -66,4 +66,4 @@ export interface StatsResponse {
     total: string;
     count: number;
   }>;
-} 
+}

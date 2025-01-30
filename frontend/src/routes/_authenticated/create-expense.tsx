@@ -79,8 +79,8 @@ function RouteComponent() {
       const response = await api.v1.expenses.$post({
         json: {
           ...value,
-          amount: value.amount,
-          date: new Date(value.date),
+          date: new Date(value.date).toISOString(),
+          categoryId: 1,
         },
       });
 
