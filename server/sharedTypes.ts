@@ -32,3 +32,14 @@ export const filterSchema = z.object({
   search: z.string().optional(),
 })
 export type Filter = z.infer<typeof filterSchema>
+
+// Category schema
+export const categorySchema = z.object({
+  id: z.number().int().positive(),
+  name: z.string().min(3).max(100),
+  description: z.string().optional(),
+  type: z.enum(['expense', 'income']),
+  icon: z.string().optional(),
+  color: z.string().optional(),
+})
+export type Category = z.infer<typeof categorySchema>

@@ -21,22 +21,36 @@ import {
 import { useForm } from "@tanstack/react-form";
 import { api } from "@/lib/api";
 import { type CreateExpense, createExpenseSchema } from "@server/sharedTypes";
+import { useQuery } from "@tanstack/react-query";
+import type { CategoryResponse, Category } from "@/lib/types";
 
 type ExpenseType = "expense" | "income";
 type ExpenseStatus = "cleared" | "pending" | "reconciled";
 
-const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
-  "Food & Dining": { bg: "bg-orange-100", text: "text-orange-800" },
-  Transportation: { bg: "bg-blue-100", text: "text-blue-800" },
-  Shopping: { bg: "bg-pink-100", text: "text-pink-800" },
-  "Bills & Utilities": { bg: "bg-yellow-100", text: "text-yellow-800" },
-  Entertainment: { bg: "bg-purple-100", text: "text-purple-800" },
-  "Health & Fitness": { bg: "bg-green-100", text: "text-green-800" },
-  Travel: { bg: "bg-indigo-100", text: "text-indigo-800" },
-  Home: { bg: "bg-red-100", text: "text-red-800" },
-  Education: { bg: "bg-cyan-100", text: "text-cyan-800" },
-  Other: { bg: "bg-gray-100", text: "text-gray-800" },
-};
+async function fetchCategories(): Promise<CategoryResponse> {
+  const res = await api.v1.expenses.categories.$get();
+  if (res.ok) {
+    const data = await res.json();
+    return {
+      categories: data.categories.map(
+        (category: {
+          type: string;
+          id: number;
+          name: string;
+          icon: string | null;
+          color: string | null;
+          description: string | null;
+          createdAt: string | null;
+          updatedAt: string | null;
+        }) => ({
+          ...category,
+          type: category.type as ExpenseType,
+        })
+      ) as Category[],
+    };
+  }
+  throw new Error("Failed to fetch categories");
+}
 
 export const Route = createFileRoute("/_authenticated/create-expense")({
   component: RouteComponent,
@@ -44,7 +58,10 @@ export const Route = createFileRoute("/_authenticated/create-expense")({
 
 function RouteComponent() {
   const navigate = useNavigate();
-  const categoryNames = Object.keys(CATEGORY_COLORS);
+  const { data: categoriesData } = useQuery({
+    queryKey: ["get-categories"],
+    queryFn: fetchCategories,
+  });
 
   const formatAmount = (amount: string) => {
     const num = Number(amount);
@@ -203,7 +220,7 @@ function RouteComponent() {
                 <div>
                   <Label htmlFor={field.name}>Category</Label>
                   <Select
-                    value={(field.state.value ?? 1).toString()}
+                    value={field.state.value?.toString()}
                     onValueChange={(value: string) =>
                       field.handleChange(Number(value))
                     }
@@ -212,15 +229,14 @@ function RouteComponent() {
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
-                      {categoryNames.map((category, index) => (
+                      {categoriesData?.categories.map((category) => (
                         <SelectItem
-                          key={category}
-                          value={(index + 1).toString()}
+                          key={category.id}
+                          value={category.id.toString()}
                         >
-                          <span
-                            className={`inline-flex items-center ${CATEGORY_COLORS[category].bg} ${CATEGORY_COLORS[category].text} px-2 py-1 rounded-full text-sm`}
-                          >
-                            {category}
+                          <span className="flex items-center gap-1">
+                            <span>{category.icon || "📝"}</span>
+                            <span>{category.name || "Uncategorized"}</span>
                           </span>
                         </SelectItem>
                       ))}
@@ -346,8 +362,9 @@ function RouteComponent() {
           ]}
         >
           {([title, amount, type, categoryId, date]) => {
-            const categoryIndex = Number(categoryId || 1) - 1;
-            const category = categoryNames[categoryIndex] || "";
+            const category = categoriesData?.categories.find(
+              (c) => c.id === categoryId
+            );
             const dateObj = date instanceof Date ? date : new Date();
             const dateStr = dateObj.toLocaleDateString();
             const timeStr = dateObj.toLocaleTimeString([], {
@@ -377,20 +394,24 @@ function RouteComponent() {
                     <TableRow
                       className={type === "income" ? "text-green-600" : ""}
                     >
-                      <TableCell>{title?.toString() || "(Title)"}</TableCell>
+                      <TableCell>{String(title) || "(Title)"}</TableCell>
                       <TableCell>
-                        {category ? (
+                        {type === "income" ? (
+                          <span className="inline-flex items-center rounded-full px-2 py-1 text-sm bg-green-100 text-green-800">
+                            Income
+                          </span>
+                        ) : category ? (
                           <span
-                            className={`inline-flex items-center ${
-                              type === "income"
-                                ? "bg-green-100 text-green-800"
-                                : `${CATEGORY_COLORS[category]?.bg || "bg-gray-100"} ${
-                                    CATEGORY_COLORS[category]?.text ||
-                                    "text-gray-800"
-                                  }`
-                            } px-2 py-1 rounded-full text-sm`}
+                            className="inline-flex items-center rounded-full px-2 py-1 text-sm"
+                            style={{
+                              backgroundColor: `${category.color}15`,
+                              color: category.color || "#71717A",
+                            }}
                           >
-                            {category}
+                            <span className="flex items-center gap-1">
+                              <span>{category.icon || "📝"}</span>
+                              <span>{category.name || "Uncategorized"}</span>
+                            </span>
                           </span>
                         ) : (
                           "(Category)"
@@ -400,7 +421,9 @@ function RouteComponent() {
                       <TableCell>{timeStr}</TableCell>
                       <TableCell
                         className={`text-right ${
-                          type === "income" ? "text-green-600" : "text-red-600"
+                          type === "income"
+                            ? "text-green-600 font-medium"
+                            : "text-red-600"
                         }`}
                       >
                         {type === "income" ? "+" : "-"}$
@@ -415,7 +438,6 @@ function RouteComponent() {
             );
           }}
         </form.Subscribe>
-
         <div className="flex gap-4">
           <Button
             type="button"

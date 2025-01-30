@@ -12,7 +12,11 @@ Sentry.init({
   dsn: "https://38b1b3405c4803acb3576e67046fa0cf@o4508695687725056.ingest.us.sentry.io/4508719050391552",
   integrations: [
     Sentry.browserTracingIntegration(),
-    Sentry.replayIntegration(),
+    Sentry.replayIntegration({
+      maskAllText: false,
+      maskAllInputs: false,
+      blockAllMedia: false,
+    }),
   ],
   tracesSampleRate: 1.0,
   tracePropagationTargets: ["localhost", /^https:\/\/yourserver\.io\/api/],
