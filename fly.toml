@@ -7,12 +7,11 @@ primary_region = 'lax'
 
 [build]
   [build.args]
-    SENTRY_AUTH_TOKEN = "151c44330e7cfa4d0ac934573f723bd776799827be7665e25460859c1a3590a7"
     SENTRY_ORG = "pry0rity"
     SENTRY_PROJECT = "javascript-react"
 
 [env]
-  SENTRY_AUTH_TOKEN = "151c44330e7cfa4d0ac934573f723bd776799827be7665e25460859c1a3590a7"
+  SENTRY_AUTH_TOKEN = ""
   SENTRY_ORG = "pry0rity"
   SENTRY_PROJECT = "javascript-react"
 
